@@ -17,7 +17,8 @@
 html,body{background:var(--ui-bg);font-family:"PingFang SC","Microsoft YaHei","Source Han Sans SC",sans-serif;color:var(--ink);-webkit-text-size-adjust:100%;}
 body{padding-bottom:calc(64px + env(safe-area-inset-bottom));}
 .app{max-width:560px;margin:0 auto;}
-header.top{position:sticky;top:0;z-index:50;background:var(--ui-bar);color:#F5F1E6;padding:14px 18px calc(12px);display:flex;justify-content:space-between;align-items:center;}
+header.top{position:sticky;top:0;z-index:50;background:var(--ui-bar);color:#F5F1E6;padding:14px 18px 0;}
+header.top .top-row{display:flex;justify-content:space-between;align-items:center;}
 header.top .t{font-size:16px;letter-spacing:2px;font-weight:600;}
 header.top .s{font-size:11px;color:#9AA4B5;letter-spacing:1px;margin-top:2px;}
 header.top .gear{font-size:22px;color:#C9B27A;background:none;border:none;padding:6px;}
@@ -142,6 +143,12 @@ nav.tabs button.on{color:var(--accent);font-weight:700;}
 .c0-motto{font-size:92px;font-weight:700;letter-spacing:14px;color:#F5F1E6;text-indent:14px;line-height:1.1;}
 .c0-motto-sub{font-family:"PingFang SC",sans-serif;font-size:23px;color:#C7CEDA;letter-spacing:2px;margin-top:26px;line-height:1.7;}
 .c0-cta{margin-top:auto;font-family:"PingFang SC",sans-serif;font-size:19px;color:#E7C98F;letter-spacing:3px;padding:18px 36px;border:1px solid rgba(231,201,143,.6);border-radius:40px;}
+.c0-badge{position:absolute;top:150px;right:64px;font-family:"PingFang SC",sans-serif;font-size:15px;letter-spacing:1px;color:#C7CEDA;background:rgba(201,178,122,.14);border:1px solid rgba(201,178,122,.4);padding:10px 18px;border-radius:30px;display:flex;align-items:center;gap:10px;}
+.c0-badge .dot{width:7px;height:7px;border-radius:50%;background:#C9B27A;display:inline-block;}
+/* 顶部常驻状态条 */
+#quota-bar{background:rgba(201,178,122,.12);color:#E7C98F;font-size:12px;letter-spacing:.5px;padding:8px 18px;margin:12px -18px 0;border-top:1px solid rgba(245,241,230,.12);display:flex;justify-content:space-between;align-items:center;gap:10px;}
+#quota-bar b{font-weight:700;color:#F5F1E6;}
+#quota-bar .q-warn{color:#F0A6B0;font-weight:700;}
 /* card4 周合辑 */
 .c4 .brand{padding:44px 56px 20px;}
 .c4-week{padding:32px 56px 24px;background:var(--ink);color:#F5F1E6;display:flex;justify-content:space-between;align-items:center;}
@@ -172,8 +179,8 @@ nav.tabs button.on{color:var(--accent);font-weight:700;}
 <body>
 <div class="app">
 <header class="top">
-  <div><div class="t">申论精读卡工厂</div><div class="s">在职备考 · 江苏B类 · 上岸闪记</div></div>
-  <button class="gear" onclick="showView('settings')">⚙</button>
+  <div class="top-row"><div><div class="t">申论精读卡工厂</div><div class="s">在职备考 · 江苏B类 · 上岸闪记</div></div><button class="gear" onclick="showView('settings')">⚙</button></div>
+  <div id="quota-bar"></div>
 </header>
 
 <!-- 今日拆解 -->
@@ -281,6 +288,12 @@ nav.tabs button.on{color:var(--accent);font-weight:700;}
     <label class="f">账号名</label><input class="f" id="s-handle" placeholder="上岸闪记">
   </div>
   <div class="card-ui">
+    <h3>免费额度提醒</h3>
+    <label class="f">额度到期日（去百炼「免费额度」页看）</label><input class="f" id="s-quota" type="date">
+    <label class="f" style="display:flex;align-items:center;gap:8px;margin-top:14px;cursor:pointer;"><input type="checkbox" id="s-showquota" style="width:auto;" checked>把「距省考 · 额度剩」徽章印到封面卡上</label>
+    <div class="hint">顶部状态条始终显示（仅你可见）。这个勾选决定「导出/截图的封面卡图片」上要不要带这行字——发小红书前若不想露出额度信息，取消勾选即可。</div>
+  </div>
+  <div class="card-ui">
     <h3>今日鼓励语（可选）</h3>
     <label class="f">指定成语（留空则每天自动轮转）</label><input class="f" id="s-motto" placeholder="如：功不唐捐">
     <label class="f">副句</label><input class="f" id="s-mottosub" placeholder="留空自动配">
@@ -316,7 +329,7 @@ function daysLeft(exam,today){if(!exam||!today)return null;return Math.round((ex
 function dayOfYear(d){const s=new Date(d.getFullYear(),0,0);return Math.floor((d-s)/86400000);}
 function pickMotto(){const m=(S.motto||'').trim();if(m)return[m,(S.mottoSub||'').trim()||'今天也陪你一起，离家门口近一步。'];const d=parseD(todayISO());return MOTTO[dayOfYear(d)%MOTTO.length];}
 function autoDayNo(){if(!S.start)return '001';const st=parseD(S.start),td=parseD(todayISO());if(!st)return '001';return pad(Math.floor((td-st)/86400000)+1);}
-function ctx(){const d=parseD(todayISO());return{date:todayISO(),mmdd:todayISO().slice(5).replace('-',' / '),wd:WD[d.getDay()],dayNo:autoDayNo(),handle:S.handle||'上岸闪记',exam:S.exam,examLabel:S.examLabel||'江苏省考笔试',tags:splitTags($('g-tags')?$('g-tags').value:'')};}
+function ctx(){const d=parseD(todayISO());return{date:todayISO(),mmdd:todayISO().slice(5).replace('-',' / '),wd:WD[d.getDay()],dayNo:autoDayNo(),handle:S.handle||'上岸闪记',exam:S.exam,examLabel:S.examLabel||'江苏省考笔试',quota:S.quota,showQuota:S.showQuota!==false,tags:splitTags($('g-tags')?$('g-tags').value:'')};}
 
 /* ============ 存储 ============ */
 let S=JSON.parse(localStorage.getItem('sl_settings')||'{}');
@@ -327,7 +340,7 @@ function putEntries(a){localStorage.setItem('sl_entries',JSON.stringify(a));}
 /* ============ 卡片渲染 ============ */
 function brand(c){return `<div class="brand"><div class="brand-l"><div class="brand-name">申论日更</div><div class="brand-sub">IN-SERVICE · JIANGSU</div></div><div class="brand-r"><div class="date-big">${c.mmdd}</div><div class="date-sub">${c.wd} · DAY ${c.dayNo}</div></div></div>`;}
 function foot(tags,handle){return `<div class="foot"><div class="tags">${tags.map(t=>`<span class="tag"># ${esc(t)}</span>`).join('')}</div><div class="handle">@ ${esc(handle)}</div></div>`;}
-function card0(c){const dl=daysLeft(parseD(c.exam),parseD(c.date));const [m,sub]=pickMotto();const num=dl==null?'—':(dl<0?'已考':(dl<100?pad(dl):dl));const unit=(dl!=null&&dl>=0)?'<span class="c0-unit">天</span>':'';const dline=(dl!=null&&dl>=0)?`笔试 ${c.exam.replace(/-/g,'.')} ｜ 今天 ${c.date.replace(/-/g,'.')}`:'祝你好消息 · 回头看看这段日子';return `<div class="card card0">${brand(c)}<div class="c0-body"><div class="c0-kicker">距 ${esc(c.examLabel)}</div><div class="c0-count"><span class="c0-num">${num}</span>${unit}</div><div class="c0-date">${dline}</div><div class="c0-divider"></div><div class="c0-motto">${esc(m)}</div><div class="c0-motto-sub">${esc(sub)}</div><div class="c0-cta">今天，也陪你一起离家门口近一步</div></div>${foot(c.tags,c.handle)}</div>`;}
+function card0(c){const dl=daysLeft(parseD(c.exam),parseD(c.date));const [m,sub]=pickMotto();const num=dl==null?'—':(dl<0?'已考':(dl<100?pad(dl):dl));const unit=(dl!=null&&dl>=0)?'<span class="c0-unit">天</span>':'';const dline=(dl!=null&&dl>=0)?`笔试 ${c.exam.replace(/-/g,'.')} ｜ 今天 ${c.date.replace(/-/g,'.')}`:'祝你好消息 · 回头看看这段日子';let badge='';if(c.showQuota&&c.quota){const ql=daysLeft(parseD(c.quota),parseD(c.date));const eTxt=(dl!=null&&dl>=0)?('距省考 '+dl+' 天'):'省考已结束';const qTxt=(ql==null)?'额度：—':(ql<0?'额度已到期':('额度剩 '+ql+' 天'));badge=`<div class="c0-badge"><span class="dot"></span>${esc(eTxt)} · ${esc(qTxt)}</div>`;}return `<div class="card card0">${brand(c)}${badge}<div class="c0-body"><div class="c0-kicker">距 ${esc(c.examLabel)}</div><div class="c0-count"><span class="c0-num">${num}</span>${unit}</div><div class="c0-date">${dline}</div><div class="c0-divider"></div><div class="c0-motto">${esc(m)}</div><div class="c0-motto-sub">${esc(sub)}</div><div class="c0-cta">今天，也陪你一起离家门口近一步</div></div>${foot(c.tags,c.handle)}</div>`;}
 function card1(c,e){const qs=e.quotes.map((q,i)=>`<div class="q"><div class="q-num">${pad(i+1)}</div><div class="q-content"><div class="q-text">${emph(q.text)}</div><div class="q-use"><b>适用主题：</b>${esc(q.topic)}<br><b>写法提示：</b>${esc(q.tip)}</div></div></div>`).join('');return `<div class="card">${brand(c)}<div class="seal" style="top:130px;right:56px;">今日<br>金句</div><div class="body" style="padding-top:80px;"><div class="c1-kicker">TODAY'S QUOTES</div><div class="c1-title">${esc(e.qtitle||c.tags[2]||'申论素材')}</div><div class="c1-source">${esc(e.source_line||'素材来源｜'+(e.source||''))}</div><div class="quotes">${qs}</div></div>${foot(c.tags,c.handle)}</div>`;}
 function card2(c,e){const d=e.data;const tags=splitTags(d.tags||'').length?splitTags(d.tags):c.tags;return `<div class="card">${brand(c)}<div class="seal" style="top:130px;right:56px;">江苏<br>数据</div><div class="body" style="padding-top:80px;"><div class="c2-head"><div class="c2-title">${esc(d.title)}</div><div class="c2-tag">CASE ${esc(d.no||'000')}</div></div><div class="data-hero"><div class="data-num">${esc(d.num)}<span class="data-unit">${esc(d.unit)}</span></div><div class="data-label">${esc(d.label)}</div><div class="data-source">${esc(d.source)}</div></div><div class="c2-section"><div class="c2-section-title">案例背景</div><div class="c2-section-body">${emph(d.bg)}</div></div><div class="c2-section"><div class="c2-section-title">申论写法</div><div class="c2-usage"><div class="c2-usage-text">${emph(d.usage)}</div></div></div></div>${foot(tags,c.handle)}</div>`;}
 function card3(c,e){const k=e.skeleton;const sk=k.sections.map(s=>`<div class="skel"><div class="skel-key">${esc(s.key)}</div><div class="skel-val"><div class="skel-main">${emph(s.main)}</div><div class="skel-sub">${emph(s.sub)}</div></div></div>`).join('');const tags=splitTags(k.tags||'').length?splitTags(k.tags):c.tags;return `<div class="card">${brand(c)}<div class="body" style="padding-top:56px;"><div class="c3-head"><div class="c3-kicker">FRAMEWORK BREAKDOWN · 骨架拆解</div><div class="c3-title">${esc(k.title)}</div><div class="c3-meta">${emph(k.meta)}</div></div><div class="skeleton">${sk}</div></div>${foot(tags,c.handle)}</div>`;}
@@ -453,8 +466,8 @@ function renderArc(){
 }
 
 /* ============ 设置 ============ */
-function loadSettingsToForm(){$('s-key').value=S.key||'';$('s-base').value=S.base||'https://dashscope.aliyuncs.com/compatible-mode/v1';$('s-model').value=S.model||'qwen-plus';$('s-exam').value=S.exam||'2026-12-06';$('s-examlabel').value=S.examLabel||'2027 江苏省考笔试';$('s-start').value=S.start||'';$('s-handle').value=S.handle||'上岸闪记';$('s-motto').value=S.motto||'';$('s-mottosub').value=S.mottoSub||'';}
-function saveSettings(){S={key:$('s-key').value.trim(),base:$('s-base').value.trim(),model:$('s-model').value.trim(),exam:$('s-exam').value,examLabel:$('s-examlabel').value.trim(),start:$('s-start').value,handle:$('s-handle').value.trim(),motto:$('s-motto').value.trim(),mottoSub:$('s-mottosub').value.trim()};saveS();toast('st-set','已保存 ✓','ok');}
+function loadSettingsToForm(){$('s-key').value=S.key||'';$('s-base').value=S.base||'https://dashscope.aliyuncs.com/compatible-mode/v1';$('s-model').value=S.model||'qwen-plus';$('s-exam').value=S.exam||'2026-12-06';$('s-examlabel').value=S.examLabel||'2027 江苏省考笔试';$('s-start').value=S.start||'';$('s-handle').value=S.handle||'上岸闪记';$('s-quota').value=S.quota||'2026-12-16';$('s-showquota').checked=S.showQuota!==false;$('s-motto').value=S.motto||'';$('s-mottosub').value=S.mottoSub||'';}
+function saveSettings(){S={key:$('s-key').value.trim(),base:$('s-base').value.trim(),model:$('s-model').value.trim(),exam:$('s-exam').value,examLabel:$('s-examlabel').value.trim(),start:$('s-start').value,handle:$('s-handle').value.trim(),quota:$('s-quota').value,showQuota:$('s-showquota').checked,motto:$('s-motto').value.trim(),mottoSub:$('s-mottosub').value.trim()};saveS();updateQuotaBar();toast('st-set','已保存 ✓','ok');}
 
 /* ============ 示例数据 ============ */
 function loadSample(){
@@ -469,13 +482,17 @@ function loadSample(){
 }
 function manualFill(){renderForm({qtitle:'',quotes:[{},{},{}],data:{},skeleton:{sections:[{key:'是什么'},{key:'为什么'},{key:'怎么做'}]},tags:[]});toast('st-break','已展开手动填写表单','ok');}
 
+/* ============ 顶部额度状态条 ============ */
+function updateQuotaBar(){const bar=$('quota-bar');if(!bar)return;const td=parseD(todayISO());const dl=daysLeft(parseD(S.exam),td);const ql=daysLeft(parseD(S.quota||'2026-12-16'),td);const examTxt=(dl!=null&&dl>=0)?('距省考 <b>'+dl+'</b> 天'):'省考已结束';let qTxt;if(ql==null)qTxt='额度：未设置';else if(ql<0)qTxt='<span class="q-warn">免费额度已到期</span>';else if(ql<=15)qTxt='<span class="q-warn">额度仅剩 '+ql+' 天</span>';else qTxt='额度剩 <b>'+ql+'</b> 天';bar.innerHTML='<span>'+examTxt+'</span><span>'+qTxt+'</span>';}
+
 /* ============ 导航 ============ */
 function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('v-'+v).classList.add('active');document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));if(v==='preview')renderPreview();if(v==='arc')renderArc();window.scrollTo(0,0);}
 window.addEventListener('resize',()=>{if($('v-preview').classList.contains('active'))renderPreview();});
 
 /* ============ 初始化 ============ */
-if(!S.exam){S={exam:'2026-12-06',examLabel:'2027 江苏省考笔试',handle:'上岸闪记',base:'https://dashscope.aliyuncs.com/compatible-mode/v1',model:'qwen-plus'};saveS();}
+if(!S.exam){S={exam:'2026-12-06',examLabel:'2027 江苏省考笔试',handle:'上岸闪记',base:'https://dashscope.aliyuncs.com/compatible-mode/v1',model:'qwen-plus',quota:'2026-12-16',showQuota:true};saveS();}
 loadSettingsToForm();
+updateQuotaBar();
 if(!S.start){/* 提醒设置起始日 */}
 </script>
 </body>
