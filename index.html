@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>申论精读卡工厂 · 上岸闪记</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{
+  --bg-page:#EEEBE4; --bg-card:#FAF8F3; --ink:#1A2332; --ink-soft:#3A4658;
+  --muted:#7A8090; --line:#D8D2C4; --line-soft:#EAE5D8;
+  --accent:#2D5F4E; --accent-soft:#E8F0EC; --seal:#8B1E3F; --gold:#A8894A;
+  --ui-bg:#F4F1EA; --ui-bar:#1A2332;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--ui-bg);font-family:"PingFang SC","Microsoft YaHei","Source Han Sans SC",sans-serif;color:var(--ink);-webkit-text-size-adjust:100%;}
+body{padding-bottom:calc(64px + env(safe-area-inset-bottom));}
+.app{max-width:560px;margin:0 auto;}
+header.top{position:sticky;top:0;z-index:50;background:var(--ui-bar);color:#F5F1E6;padding:14px 18px calc(12px);display:flex;justify-content:space-between;align-items:center;}
+header.top .t{font-size:16px;letter-spacing:2px;font-weight:600;}
+header.top .s{font-size:11px;color:#9AA4B5;letter-spacing:1px;margin-top:2px;}
+header.top .gear{font-size:22px;color:#C9B27A;background:none;border:none;padding:6px;}
+.view{display:none;padding:16px;}
+.view.active{display:block;}
+.card-ui{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,.03);}
+.card-ui h3{font-size:14px;color:var(--accent);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.card-ui h3::before{content:"";width:4px;height:16px;background:var(--accent);border-radius:2px;}
+label.f{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px;letter-spacing:.5px;}
+input.f,textarea.f,select.f{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:15px;font-family:inherit;background:#FCFBF8;color:var(--ink);}
+textarea.f{resize:vertical;line-height:1.6;}
+textarea.body-in{min-height:150px;font-size:14px;}
+.hint{font-size:11px;color:var(--muted);line-height:1.6;margin-top:6px;}
+.btn{border:none;border-radius:10px;padding:12px 16px;font-size:15px;font-family:inherit;font-weight:600;cursor:pointer;letter-spacing:1px;transition:transform .05s;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--accent);color:#fff;width:100%;}
+.btn-gold{background:var(--gold);color:#fff;}
+.btn-ghost{background:#fff;color:var(--accent);border:1px solid var(--accent);}
+.btn-seal{background:var(--seal);color:#fff;}
+.btn-row{display:flex;gap:10px;margin-top:12px;}
+.btn-row .btn{flex:1;}
+.btn-sm{padding:8px 12px;font-size:13px;border-radius:8px;}
+.status{font-size:13px;margin-top:10px;padding:10px 12px;border-radius:8px;display:none;line-height:1.6;}
+.status.show{display:block;}
+.status.ok{background:var(--accent-soft);color:var(--accent);}
+.status.err{background:#FBE9EC;color:var(--seal);}
+.status.load{background:#F0EDE3;color:var(--gold);}
+/* 拆解结果编辑区 */
+.seg{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;}
+.seg .seg-t{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:8px;}
+.item{border:1px solid var(--line-soft);border-radius:8px;padding:10px;margin-bottom:10px;background:#FCFBF8;}
+.item .del{float:right;color:var(--seal);font-size:12px;background:none;border:none;}
+.item input.f,.item textarea.f{font-size:14px;padding:8px 10px;margin-bottom:6px;background:#fff;}
+.item .mini{font-size:11px;color:var(--muted);}
+.add{font-size:13px;color:var(--accent);background:none;border:1px dashed var(--accent);border-radius:8px;padding:8px;width:100%;}
+/* 预览 */
+.preview-note{font-size:12px;color:var(--muted);text-align:center;margin-bottom:12px;line-height:1.6;}
+.cardwrap{position:relative;margin:0 auto 18px;overflow:hidden;border-radius:6px;box-shadow:0 6px 22px rgba(0,0,0,.14);}
+.export-layer{position:fixed;left:-99999px;top:0;}
+/* 存档列表 */
+.arc-item{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+.arc-item .l{font-size:14px;font-weight:600;}
+.arc-item .r{font-size:12px;color:var(--muted);margin-top:3px;}
+.arc-item .acts{display:flex;gap:8px;}
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:40px 0;}
+/* 底部 tab */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);}
+nav.tabs button{flex:1;background:none;border:none;padding:9px 0 7px;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit;}
+nav.tabs button .ic{font-size:20px;}
+nav.tabs button.on{color:var(--accent);font-weight:700;}
+/* ===== 卡片本体（与 convert.py 一致）===== */
+.card{width:1242px;height:1656px;background:var(--bg-card);position:relative;overflow:hidden;display:flex;flex-direction:column;font-family:"Source Han Serif SC","Noto Serif CJK SC","Songti SC","SimSun",serif;color:var(--ink);}
+.brand{padding:44px 64px 24px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line);}
+.brand-l{display:flex;flex-direction:column;gap:6px;}
+.brand-name{font-size:22px;letter-spacing:6px;color:var(--ink);font-weight:500;}
+.brand-sub{font-family:"PingFang SC",sans-serif;font-size:12px;color:var(--muted);letter-spacing:3px;}
+.brand-r{text-align:right;font-family:"PingFang SC",sans-serif;}
+.date-big{font-size:36px;color:var(--ink);font-weight:300;letter-spacing:2px;line-height:1;}
+.date-sub{font-size:11px;color:var(--muted);letter-spacing:2px;margin-top:8px;}
+.seal{position:absolute;width:78px;height:78px;background:var(--seal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;letter-spacing:2px;line-height:1.2;text-align:center;font-weight:600;transform:rotate(-4deg);opacity:.92;}
+.foot{margin-top:auto;padding:28px 64px 44px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-family:"PingFang SC",sans-serif;}
+.tags{display:flex;gap:10px;flex-wrap:wrap;}
+.tag{padding:6px 14px;background:var(--accent-soft);color:var(--accent);font-size:14px;letter-spacing:1px;border-radius:2px;}
+.handle{font-size:13px;color:var(--muted);letter-spacing:2px;}
+.body{flex:1;padding:56px 64px 40px;display:flex;flex-direction:column;}
+.c1-kicker{font-family:"PingFang SC",sans-serif;font-size:14px;color:var(--accent);letter-spacing:6px;margin-bottom:16px;}
+.c1-title{font-size:52px;font-weight:600;letter-spacing:4px;line-height:1.2;margin-bottom:12px;}
+.c1-source{font-family:"PingFang SC",sans-serif;font-size:14px;color:var(--muted);letter-spacing:2px;margin-bottom:44px;padding-bottom:24px;border-bottom:1px dashed var(--line);}
+.quotes{display:flex;flex-direction:column;gap:36px;flex:1;}
+.q{display:flex;gap:24px;align-items:flex-start;}
+.q-num{font-family:"PingFang SC",sans-serif;font-size:13px;color:var(--gold);letter-spacing:2px;padding-top:10px;min-width:44px;border-top:2px solid var(--gold);}
+.q-content{flex:1;}
+.q-text{font-size:29px;line-height:1.75;color:var(--ink);letter-spacing:1.5px;font-weight:500;margin-bottom:14px;}
+.q-text em{font-style:normal;color:var(--accent);border-bottom:2px solid var(--accent);padding-bottom:2px;}
+.q-use{font-family:"PingFang SC",sans-serif;font-size:14px;color:var(--muted);line-height:1.7;letter-spacing:1px;padding-left:14px;border-left:2px solid var(--line);}
+.q-use b{color:var(--ink-soft);font-weight:500;}
+.c2-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:40px;}
+.c2-title{font-size:44px;font-weight:600;letter-spacing:3px;}
+.c2-tag{font-family:"PingFang SC",sans-serif;font-size:13px;color:var(--seal);letter-spacing:3px;border:1px solid var(--seal);padding:6px 12px;}
+.data-hero{background:linear-gradient(135deg,#F4F0E6 0%,#FAF8F3 100%);padding:44px 40px;margin-bottom:32px;border-left:4px solid var(--accent);}
+.data-num{font-size:100px;font-weight:600;color:var(--accent);line-height:1;letter-spacing:-2px;display:flex;align-items:baseline;gap:8px;}
+.data-unit{font-size:32px;color:var(--accent);font-weight:500;letter-spacing:2px;}
+.data-label{font-family:"PingFang SC",sans-serif;font-size:18px;color:var(--ink);margin-top:16px;letter-spacing:2px;line-height:1.6;}
+.data-source{font-family:"PingFang SC",sans-serif;font-size:12px;color:var(--muted);margin-top:10px;letter-spacing:1px;}
+.c2-section{margin-bottom:26px;}
+.c2-section-title{font-family:"PingFang SC",sans-serif;font-size:14px;color:var(--gold);letter-spacing:4px;margin-bottom:14px;display:flex;align-items:center;gap:12px;}
+.c2-section-title::before{content:"";width:24px;height:1px;background:var(--gold);}
+.c2-section-body{font-size:22px;line-height:1.8;color:var(--ink-soft);letter-spacing:1px;}
+.c2-section-body b{color:var(--ink);font-weight:600;}
+.c2-usage{background:var(--accent-soft);padding:24px 28px;margin-top:8px;}
+.c2-usage-text{font-size:20px;line-height:1.75;color:var(--accent);letter-spacing:1px;font-weight:500;}
+.c2-usage-text b{font-weight:600;color:var(--ink);}
+.c3-head{margin-bottom:36px;}
+.c3-kicker{font-family:"PingFang SC",sans-serif;font-size:13px;color:var(--muted);letter-spacing:4px;margin-bottom:12px;}
+.c3-title{font-size:40px;font-weight:600;letter-spacing:2px;line-height:1.35;margin-bottom:14px;}
+.c3-meta{font-family:"PingFang SC",sans-serif;font-size:14px;color:var(--muted);letter-spacing:2px;padding-bottom:20px;border-bottom:2px solid var(--ink);}
+.c3-meta b{color:var(--seal);font-weight:500;}
+.skeleton{display:flex;flex-direction:column;gap:22px;flex:1;}
+.skel{display:grid;grid-template-columns:130px 1fr;gap:24px;padding:22px 0;border-bottom:1px solid var(--line-soft);}
+.skel:last-child{border-bottom:none;}
+.skel-key{font-size:26px;color:var(--accent);font-weight:600;letter-spacing:4px;padding-top:4px;position:relative;}
+.skel-key::after{content:"";display:block;width:32px;height:2px;background:var(--accent);margin-top:10px;}
+.skel-val{display:flex;flex-direction:column;gap:10px;}
+.skel-main{font-size:22px;line-height:1.65;color:var(--ink);letter-spacing:1px;font-weight:500;}
+.skel-main b{color:var(--accent);font-weight:600;}
+.skel-sub{font-family:"PingFang SC",sans-serif;font-size:15px;line-height:1.75;color:var(--muted);letter-spacing:.5px;}
+.skel-sub b{color:var(--ink-soft);font-weight:500;}
+/* card0 封面 */
+.card0{background:linear-gradient(160deg,#1A2332 0%,#243247 100%);color:#F5F1E6;}
+.card0 .brand{border-bottom:1px solid rgba(245,241,230,.18);}
+.card0 .brand-name{color:#F5F1E6;} .card0 .brand-sub{color:#9AA4B5;}
+.card0 .date-big{color:#F5F1E6;} .card0 .date-sub{color:#9AA4B5;}
+.card0 .foot{border-top:1px solid rgba(245,241,230,.18);}
+.card0 .tag{background:rgba(232,240,236,.12);color:#BFD6CB;} .card0 .handle{color:#9AA4B5;}
+.c0-body{flex:1;padding:40px 64px 48px;display:flex;flex-direction:column;align-items:center;text-align:center;}
+.c0-kicker{font-family:"PingFang SC",sans-serif;font-size:22px;color:#C9B27A;letter-spacing:8px;margin-top:24px;text-indent:8px;}
+.c0-count{display:flex;align-items:baseline;justify-content:center;gap:16px;margin:14px 0 8px;}
+.c0-num{font-size:280px;font-weight:700;color:#F5F1E6;line-height:.9;letter-spacing:-6px;}
+.c0-unit{font-size:64px;color:#C9B27A;font-weight:500;letter-spacing:2px;}
+.c0-date{font-family:"PingFang SC",sans-serif;font-size:17px;color:#9AA4B5;letter-spacing:3px;}
+.c0-divider{width:130px;height:2px;background:#C9B27A;margin:52px 0 40px;}
+.c0-motto{font-size:92px;font-weight:700;letter-spacing:14px;color:#F5F1E6;text-indent:14px;line-height:1.1;}
+.c0-motto-sub{font-family:"PingFang SC",sans-serif;font-size:23px;color:#C7CEDA;letter-spacing:2px;margin-top:26px;line-height:1.7;}
+.c0-cta{margin-top:auto;font-family:"PingFang SC",sans-serif;font-size:19px;color:#E7C98F;letter-spacing:3px;padding:18px 36px;border:1px solid rgba(231,201,143,.6);border-radius:40px;}
+/* card4 周合辑 */
+.c4 .brand{padding:44px 56px 20px;}
+.c4-week{padding:32px 56px 24px;background:var(--ink);color:#F5F1E6;display:flex;justify-content:space-between;align-items:center;}
+.c4-week-l{display:flex;flex-direction:column;gap:6px;}
+.c4-week-num{font-size:56px;font-weight:300;letter-spacing:4px;line-height:1;}
+.c4-week-label{font-family:"PingFang SC",sans-serif;font-size:12px;letter-spacing:6px;color:#B8AE94;margin-top:10px;}
+.c4-week-r{text-align:right;font-family:"PingFang SC",sans-serif;font-size:13px;color:#B8AE94;letter-spacing:2px;line-height:1.7;}
+.c4-theme{padding:36px 56px 24px;text-align:center;}
+.c4-theme-label{font-family:"PingFang SC",sans-serif;font-size:13px;color:var(--seal);letter-spacing:6px;margin-bottom:14px;}
+.c4-theme-title{font-size:44px;font-weight:600;letter-spacing:4px;line-height:1.3;}
+.c4-body{padding:20px 56px 0;flex:1;display:flex;flex-direction:column;gap:24px;}
+.c4-day{display:grid;grid-template-columns:80px 1fr;gap:20px;padding:20px 0;border-bottom:1px solid var(--line-soft);}
+.c4-day:last-child{border-bottom:none;}
+.c4-day-num{font-family:"PingFang SC",sans-serif;display:flex;flex-direction:column;align-items:flex-start;gap:4px;}
+.c4-day-d{font-size:11px;color:var(--muted);letter-spacing:2px;}
+.c4-day-n{font-size:32px;color:var(--accent);font-weight:600;line-height:1;}
+.c4-day-content{display:flex;flex-direction:column;gap:6px;}
+.c4-day-topic{font-family:"PingFang SC",sans-serif;font-size:12px;color:var(--gold);letter-spacing:3px;}
+.c4-day-quote{font-size:19px;line-height:1.6;color:var(--ink);letter-spacing:.8px;font-weight:500;}
+.c4-day-quote em{font-style:normal;color:var(--accent);}
+.c4-summary{margin:8px 56px 0;padding:24px 28px;background:var(--accent-soft);border-left:3px solid var(--accent);}
+.c4-summary-label{font-family:"PingFang SC",sans-serif;font-size:12px;color:var(--accent);letter-spacing:4px;margin-bottom:10px;}
+.c4-summary-text{font-size:17px;line-height:1.75;color:var(--ink-soft);letter-spacing:.5px;}
+.c4-summary-text b{color:var(--accent);font-weight:600;}
+.c4 .foot{padding:24px 56px 36px;}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div><div class="t">申论精读卡工厂</div><div class="s">在职备考 · 江苏B类 · 上岸闪记</div></div>
+  <button class="gear" onclick="showView('settings')">⚙</button>
+</header>
+
+<!-- 今日拆解 -->
+<section class="view active" id="v-break">
+  <div class="card-ui">
+    <h3>① 粘贴文章正文</h3>
+    <label class="f">文章标题（可留空，AI 会识别）</label>
+    <input class="f" id="in-title" placeholder="如：统筹推进银发经济提质升级">
+    <label class="f">来源 / 期号 / 作者（可留空）</label>
+    <input class="f" id="in-source" placeholder="如：《群众》2026年第16期 · 房冠辛">
+    <label class="f">正文（微信里长按全选 → 复制 → 粘贴到这里）</label>
+    <textarea class="f body-in" id="in-body" placeholder="把整篇文章正文粘进来…"></textarea>
+    <div class="hint">小技巧：微信文章页右上角「···」→「复制链接」外，也可长按正文「全选」再复制；或在我电脑上用抓取脚本导出 txt 再粘过来。</div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="runAI()">✨ AI 自动拆解</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" onclick="loadSample()">载入示例（今日银发经济）</button>
+      <button class="btn btn-ghost btn-sm" onclick="manualFill()">跳过AI·手动填</button>
+    </div>
+    <div class="status" id="st-break"></div>
+  </div>
+
+  <div id="result" style="display:none;">
+    <div class="card-ui">
+      <h3>② 微调拆解结果</h3>
+      <div class="hint" style="margin:0 0 8px;">【】= 绿色下划线强调；&lt;&lt;&gt;&gt; = 加粗。可直接改文字，改完点生成。</div>
+
+      <div class="seg"><div class="seg-t">金句卡</div>
+        <label class="f">卡片主标题</label><input class="f" id="q-title">
+        <div id="q-list"></div>
+        <button class="add" onclick="addQuote()">+ 加一条金句</button>
+      </div>
+
+      <div class="seg"><div class="seg-t">数据案例卡</div>
+        <input class="f" id="d-title" placeholder="主题，如：银发经济 · 江苏家底" style="margin-bottom:6px;">
+        <div style="display:flex;gap:8px;">
+          <input class="f" id="d-num" placeholder="大数字 5.7" style="flex:2;">
+          <input class="f" id="d-unit" placeholder="单位 万家" style="flex:1;">
+          <input class="f" id="d-no" placeholder="编号 019" style="flex:1;">
+        </div>
+        <textarea class="f" id="d-label" placeholder="数字说明" rows="2" style="margin-top:6px;"></textarea>
+        <input class="f" id="d-source" placeholder="数据来源" style="margin-top:6px;">
+        <textarea class="f" id="d-bg" placeholder="案例背景（用&lt;&lt;&gt;&gt;加粗关键数据）" rows="3" style="margin-top:6px;"></textarea>
+        <textarea class="f" id="d-usage" placeholder="申论写法（可直接写进卷子的一段）" rows="3" style="margin-top:6px;"></textarea>
+        <input class="f" id="d-tags" placeholder="标签，用 / 分隔" style="margin-top:6px;">
+      </div>
+
+      <div class="seg"><div class="seg-t">骨架拆解卡</div>
+        <input class="f" id="k-title" placeholder="文章标题" style="margin-bottom:6px;">
+        <input class="f" id="k-meta" placeholder="来源｜期号 · 作者｜xxx" style="margin-bottom:6px;">
+        <div id="k-list"></div>
+      </div>
+
+      <div class="seg"><div class="seg-t">主题标签（封面/金句卡通用）</div>
+        <input class="f" id="g-tags" placeholder="江苏B类 / 在职备考 / 银发经济">
+      </div>
+
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-gold" onclick="genAndSave()">生成卡片并存档</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 卡片预览 -->
+<section class="view" id="v-preview">
+  <div class="preview-note">下面是 1242×1656 原图预览（已缩放显示）。点每张卡下方按钮保存到相册。<br>iPhone 若直接下载无效，长按图片「存储到照片」。</div>
+  <div id="preview-box"></div>
+  <div class="empty" id="pv-empty">还没有卡片，先去「今日」生成。</div>
+</section>
+
+<!-- 周合辑 -->
+<section class="view" id="v-week">
+  <div class="card-ui">
+    <h3>本周合辑</h3>
+    <div class="hint" style="margin:0;" id="week-info">自动聚合本周已存档的日卡。</div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="genWeekly()">生成本周合辑卡</button></div>
+  </div>
+  <div id="week-box"></div>
+</section>
+
+<!-- 存档 -->
+<section class="view" id="v-arc">
+  <div class="card-ui"><h3>历史存档</h3>
+    <div class="hint" style="margin:0;">点「编辑」回填到今日页；点「预览」查看卡片。</div>
+  </div>
+  <div id="arc-list"></div>
+</section>
+
+<!-- 设置 -->
+<section class="view" id="v-settings">
+  <div class="card-ui">
+    <h3>大模型接口</h3>
+    <label class="f">API Key</label><input class="f" id="s-key" type="password" placeholder="sk-...">
+    <label class="f">Base URL（OpenAI 兼容）</label><input class="f" id="s-base" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1">
+    <label class="f">Model</label><input class="f" id="s-model" placeholder="qwen-plus">
+    <div class="hint">默认适配阿里云通义 DashScope 兼容模式。浏览器直连若报跨域(CORS)错误，可改用「手动填」，或把 Base 换成你自己的代理地址。Key 仅存本机。</div>
+  </div>
+  <div class="card-ui">
+    <h3>倒计时 / 账号</h3>
+    <label class="f">省考笔试日期</label><input class="f" id="s-exam" type="date">
+    <label class="f">考试名称</label><input class="f" id="s-examlabel" placeholder="2027 江苏省考笔试">
+    <label class="f">备考起始日（自动算 Day N）</label><input class="f" id="s-start" type="date">
+    <label class="f">账号名</label><input class="f" id="s-handle" placeholder="上岸闪记">
+  </div>
+  <div class="card-ui">
+    <h3>今日鼓励语（可选）</h3>
+    <label class="f">指定成语（留空则每天自动轮转）</label><input class="f" id="s-motto" placeholder="如：功不唐捐">
+    <label class="f">副句</label><input class="f" id="s-mottosub" placeholder="留空自动配">
+  </div>
+  <div class="btn-row"><button class="btn btn-primary" onclick="saveSettings()">保存设置</button></div>
+  <div class="status" id="st-set"></div>
+</section>
+
+<nav class="tabs">
+  <button class="on" data-v="break" onclick="showView('break')"><span class="ic">✎</span>今日</button>
+  <button data-v="preview" onclick="showView('preview')"><span class="ic">▤</span>卡片</button>
+  <button data-v="week" onclick="showView('week')"><span class="ic">▦</span>周合</button>
+  <button data-v="arc" onclick="showView('arc')"><span class="ic">⧉</span>存档</button>
+  <button data-v="settings" onclick="showView('settings')"><span class="ic">⚙</span>设置</button>
+</nav>
+</div>
+<div class="export-layer" id="exportLayer"></div>
+
+<script>
+/* ============ 常量 ============ */
+const MOTTO=[["功不唐捐","你背过的每一句、写过的每一段，都不会白费。"],["日拱一卒","每天前进一点点，考场上就是一大步。"],["厚积薄发","现在看似缓慢的积累，都在为那一刻蓄力。"],["久久为功","备考没有白走的路，坚持本身就是天赋。"],["锲而不舍","今天也别忘了，你已经走了很远。"],["水滴石穿","不是力量大，而是功夫深；慢慢来，比较快。"],["只争朝夕","把今天过好，明天自然会有答案。"],["行稳致远","稳扎稳打的人，往往最先到达。"],["笃行不怠","想得再多，不如动手写下一篇。"],["聚沙成塔","一张卡片是沙，攒久了就是塔。"],["不积跬步","无以至千里——今天这一步，算数。"],["静待花开","该来的都在路上，你只管努力。"],["破茧成蝶","熬过这段暗日子，就是展翅的时候。"],["一鼓作气","离终点又近了一天，别松劲。"],["天道酬勤","命运不会亏待每一个认真备考的人。"],["苦尽甘来","现在吃的苦，都会变成查分时的甜。"],["磨杵成针","只要不下桌，就总有做成的一天。"],["乘风破浪","风浪再大，也要相信自己能靠岸。"],["未来可期","你正在成为那个上岸的自己。"],["顶峰相见","愿查分那天，我们都笑着说值得。"]];
+const WD=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+/* ============ 工具 ============ */
+const $=id=>document.getElementById(id);
+function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function emph(s){s=esc(s);s=s.replace(/【([^】]+)】/g,'<em>$1</em>');s=s.replace(/&lt;&lt;(.+?)&gt;&gt;/g,'<b>$1</b>');return s;}
+function splitTags(s){return (s||'').split(/\s*\/\s*/).map(t=>t.trim()).filter(Boolean);}
+function pad(n){return n<10?'0'+n:''+n;}
+function todayISO(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function parseD(s){if(!s)return null;const p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
+function daysLeft(exam,today){if(!exam||!today)return null;return Math.round((exam-today)/86400000);}
+function dayOfYear(d){const s=new Date(d.getFullYear(),0,0);return Math.floor((d-s)/86400000);}
+function pickMotto(){const m=(S.motto||'').trim();if(m)return[m,(S.mottoSub||'').trim()||'今天也陪你一起，离家门口近一步。'];const d=parseD(todayISO());return MOTTO[dayOfYear(d)%MOTTO.length];}
+function autoDayNo(){if(!S.start)return '001';const st=parseD(S.start),td=parseD(todayISO());if(!st)return '001';return pad(Math.floor((td-st)/86400000)+1);}
+function ctx(){const d=parseD(todayISO());return{date:todayISO(),mmdd:todayISO().slice(5).replace('-',' / '),wd:WD[d.getDay()],dayNo:autoDayNo(),handle:S.handle||'上岸闪记',exam:S.exam,examLabel:S.examLabel||'江苏省考笔试',tags:splitTags($('g-tags')?$('g-tags').value:'')};}
+
+/* ============ 存储 ============ */
+let S=JSON.parse(localStorage.getItem('sl_settings')||'{}');
+function saveS(){localStorage.setItem('sl_settings',JSON.stringify(S));}
+function getEntries(){return JSON.parse(localStorage.getItem('sl_entries')||'[]');}
+function putEntries(a){localStorage.setItem('sl_entries',JSON.stringify(a));}
+
+/* ============ 卡片渲染 ============ */
+function brand(c){return `<div class="brand"><div class="brand-l"><div class="brand-name">申论日更</div><div class="brand-sub">IN-SERVICE · JIANGSU</div></div><div class="brand-r"><div class="date-big">${c.mmdd}</div><div class="date-sub">${c.wd} · DAY ${c.dayNo}</div></div></div>`;}
+function foot(tags,handle){return `<div class="foot"><div class="tags">${tags.map(t=>`<span class="tag"># ${esc(t)}</span>`).join('')}</div><div class="handle">@ ${esc(handle)}</div></div>`;}
+function card0(c){const dl=daysLeft(parseD(c.exam),parseD(c.date));const [m,sub]=pickMotto();const num=dl==null?'—':(dl<0?'已考':(dl<100?pad(dl):dl));const unit=(dl!=null&&dl>=0)?'<span class="c0-unit">天</span>':'';const dline=(dl!=null&&dl>=0)?`笔试 ${c.exam.replace(/-/g,'.')} ｜ 今天 ${c.date.replace(/-/g,'.')}`:'祝你好消息 · 回头看看这段日子';return `<div class="card card0">${brand(c)}<div class="c0-body"><div class="c0-kicker">距 ${esc(c.examLabel)}</div><div class="c0-count"><span class="c0-num">${num}</span>${unit}</div><div class="c0-date">${dline}</div><div class="c0-divider"></div><div class="c0-motto">${esc(m)}</div><div class="c0-motto-sub">${esc(sub)}</div><div class="c0-cta">今天，也陪你一起离家门口近一步</div></div>${foot(c.tags,c.handle)}</div>`;}
+function card1(c,e){const qs=e.quotes.map((q,i)=>`<div class="q"><div class="q-num">${pad(i+1)}</div><div class="q-content"><div class="q-text">${emph(q.text)}</div><div class="q-use"><b>适用主题：</b>${esc(q.topic)}<br><b>写法提示：</b>${esc(q.tip)}</div></div></div>`).join('');return `<div class="card">${brand(c)}<div class="seal" style="top:130px;right:56px;">今日<br>金句</div><div class="body" style="padding-top:80px;"><div class="c1-kicker">TODAY'S QUOTES</div><div class="c1-title">${esc(e.qtitle||c.tags[2]||'申论素材')}</div><div class="c1-source">${esc(e.source_line||'素材来源｜'+(e.source||''))}</div><div class="quotes">${qs}</div></div>${foot(c.tags,c.handle)}</div>`;}
+function card2(c,e){const d=e.data;const tags=splitTags(d.tags||'').length?splitTags(d.tags):c.tags;return `<div class="card">${brand(c)}<div class="seal" style="top:130px;right:56px;">江苏<br>数据</div><div class="body" style="padding-top:80px;"><div class="c2-head"><div class="c2-title">${esc(d.title)}</div><div class="c2-tag">CASE ${esc(d.no||'000')}</div></div><div class="data-hero"><div class="data-num">${esc(d.num)}<span class="data-unit">${esc(d.unit)}</span></div><div class="data-label">${esc(d.label)}</div><div class="data-source">${esc(d.source)}</div></div><div class="c2-section"><div class="c2-section-title">案例背景</div><div class="c2-section-body">${emph(d.bg)}</div></div><div class="c2-section"><div class="c2-section-title">申论写法</div><div class="c2-usage"><div class="c2-usage-text">${emph(d.usage)}</div></div></div></div>${foot(tags,c.handle)}</div>`;}
+function card3(c,e){const k=e.skeleton;const sk=k.sections.map(s=>`<div class="skel"><div class="skel-key">${esc(s.key)}</div><div class="skel-val"><div class="skel-main">${emph(s.main)}</div><div class="skel-sub">${emph(s.sub)}</div></div></div>`).join('');const tags=splitTags(k.tags||'').length?splitTags(k.tags):c.tags;return `<div class="card">${brand(c)}<div class="body" style="padding-top:56px;"><div class="c3-head"><div class="c3-kicker">FRAMEWORK BREAKDOWN · 骨架拆解</div><div class="c3-title">${esc(k.title)}</div><div class="c3-meta">${emph(k.meta)}</div></div><div class="skeleton">${sk}</div></div>${foot(tags,c.handle)}</div>`;}
+function card4(c,week){const days=week.days.map(d=>`<div class="c4-day"><div class="c4-day-num"><div class="c4-day-d">${d.dow}</div><div class="c4-day-n">${d.n}</div></div><div class="c4-day-content"><div class="c4-day-topic">DAY ${d.dayNo} · ${esc(d.theme)}</div><div class="c4-day-quote">${emph(d.quote)}</div></div></div>`).join('');const tags=c.tags.length?c.tags:['周合辑','收藏备用','江苏B类'];return `<div class="card c4">${brand(c)}<div class="c4-week"><div class="c4-week-l"><div class="c4-week-num">WEEK ${week.no}</div><div class="c4-week-label">${week.range}</div></div><div class="c4-week-r">${week.days.length}天 · ${week.qCount}则金句<br>${week.dCount}组数据 · ${week.kCount}篇骨架</div></div><div class="c4-theme"><div class="c4-theme-label">WEEKLY THEME</div><div class="c4-theme-title">${esc(week.theme)}</div></div><div class="c4-body">${days}</div><div class="c4-summary"><div class="c4-summary-label">WEEKLY INSIGHT · 本周复盘</div><div class="c4-summary-text">${emph(week.summary)}</div></div>${foot(tags,c.handle)}</div>`;}
+
+/* ============ 缩放预览 ============ */
+function fitScale(){return Math.min(1,(Math.min(window.innerWidth,560)-32)/1242);}
+function mountPreview(el,html){const s=fitScale();el.innerHTML=`<div class="cardwrap" style="width:${1242*s}px;height:${1656*s}px;">${html}</div>`;const card=el.querySelector('.card');card.style.transform=`scale(${s})`;card.style.transformOrigin='top left';}
+
+/* ============ 导出 ============ */
+async function downloadCard(html,name){
+  const layer=$('exportLayer');layer.innerHTML=html;const card=layer.querySelector('.card');
+  card.style.transform='none';
+  const st=$('st-break');
+  try{
+    const canvas=await html2canvas(card,{width:1242,height:1656,scale:1,backgroundColor:'#FAF8F3',useCORS:true,logging:false});
+    const url=canvas.toDataURL('image/png');
+    const a=document.createElement('a');a.href=url;a.download=name+'.png';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),1000);
+    toast('st-preview','已生成 '+name+'.png，若未自动保存请长按图片存储','ok');
+  }catch(err){toast('st-preview','导出失败：'+err.message,'err');}
+  finally{layer.innerHTML='';}
+}
+function toast(id,msg,cls){const el=$(id);if(!el)return;el.textContent=msg;el.className='status show '+(cls||'');}
+
+/* ============ 拆解结果表单 ============ */
+function renderForm(e){
+  $('result').style.display='block';
+  $('q-title').value=e.qtitle||'';
+  $('q-list').innerHTML='';(e.quotes||[]).forEach(q=>addQuote(q));
+  const d=e.data||{};$('d-title').value=d.title||'';$('d-num').value=d.num||'';$('d-unit').value=d.unit||'';$('d-no').value=d.no||'';$('d-label').value=d.label||'';$('d-source').value=d.source||'';$('d-bg').value=d.bg||'';$('d-usage').value=d.usage||'';$('d-tags').value=d.tags||'';
+  const k=e.skeleton||{};$('k-title').value=k.title||'';$('k-meta').value=k.meta||'';
+  $('k-list').innerHTML='';(k.sections||[{key:'是什么'},{key:'为什么'},{key:'怎么做'}]).forEach(s=>addSkel(s));
+  $('g-tags').value=(e.tags||[]).join(' / ');
+  $('result').scrollIntoView({behavior:'smooth'});
+}
+function addQuote(q){q=q||{text:'',topic:'',tip:''};const div=document.createElement('div');div.className='item';div.innerHTML=`<button class="del" onclick="this.parentNode.remove()">删除</button><textarea class="f" data-k="text" rows="2" placeholder="金句原文，用【】标强调词">${esc(q.text)}</textarea><input class="f" data-k="topic" placeholder="适用主题：基层治理 / 枫桥经验" value="${esc(q.topic)}"><input class="f" data-k="tip" placeholder="写法提示：可作分论点首句" value="${esc(q.tip)}">`;$('q-list').appendChild(div);}
+function addSkel(s){s=s||{key:'',main:'',sub:''};const div=document.createElement('div');div.className='item';div.innerHTML=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;"><input class="f" data-k="key" placeholder="是什么" value="${esc(s.key)}" style="flex:0 0 100px;font-weight:700;color:var(--accent);"><button class="del" style="float:none;" onclick="this.parentNode.remove()">删除</button></div><textarea class="f" data-k="main" rows="2" placeholder="主论点（用&lt;&lt;&gt;&gt;加粗）">${esc(s.main)}</textarea><textarea class="f" data-k="sub" rows="2" placeholder="副说明：破题句/关键数据/江苏抓手">${esc(s.sub)}</textarea>`;$('k-list').appendChild(div);}
+function collectForm(){
+  const quotes=[...$('q-list').children].map(it=>{const g=k=>it.querySelector('[data-k='+k+']').value;return{text:g('text'),topic:g('topic'),tip:g('tip')};});
+  const sections=[...$('k-list').children].map(it=>{const g=k=>it.querySelector('[data-k='+k+']').value;return{key:g('key'),main:g('main'),sub:g('sub')};});
+  return{qtitle:$('q-title').value,source:$('in-source').value,source_line:'',quotes,tags:splitTags($('g-tags').value),
+    data:{title:$('d-title').value,num:$('d-num').value,unit:$('d-unit').value,no:$('d-no').value,label:$('d-label').value,source:$('d-source').value,bg:$('d-bg').value,usage:$('d-usage').value,tags:$('d-tags').value},
+    skeleton:{title:$('k-title').value,meta:$('k-meta').value,sections,tags:''}};
+}
+
+/* ============ 大模型拆解 ============ */
+const SYS='你是公考申论（江苏B类·在职备考）素材拆解助手。只输出严格JSON，不要任何解释文字、不要markdown代码块围栏。';
+function buildPrompt(body,title,source){return `请阅读下面这篇《群众》杂志文章正文，按申论备考需求拆解，输出JSON。\n${title?'文章标题（参考）：'+title+'\n':''}${source?'来源（参考）：'+source+'\n':''}规则：\n- quotes 恰好3条：优先挑对仗句、"从…向…"句式、古诗文起兴句；text 用【】给1-2个关键词加绿色强调；topic 给3个左右适用主题(用/分隔)；tip 给一句考场写法提示。\n- data：挑最有冲击力且与江苏相关的一个数字做主视觉；num只放数字、unit放单位；bg 用<<>>加粗2-3个关键数据；usage 写成一段可直接搬进申论的规范表述，用<<>>加粗关键词；tags 用/分隔。\n- skeleton：把全文拆成 是什么/为什么/怎么做 三段，main 用<<>>加粗核心词，sub 给破题句或关键数据/江苏抓手。\n- meta 里来源期号作者若正文有就填，用<<>>包裹期号。\nJSON结构：\n{"qtitle":"","source_line":"","tags":["",""],\n"quotes":[{"text":"","topic":"","tip":""}],\n"data":{"title":"","no":"","num":"","unit":"","label":"","source":"","bg":"","usage":"","tags":""},\n"skeleton":{"title":"","meta":"","sections":[{"key":"是什么","main":"","sub":""},{"key":"为什么","main":"","sub":""},{"key":"怎么做","main":"","sub":""}]}}\n\n正文：\n${body.slice(0,6000)}`;}
+async function runAI(){
+  const body=$('in-body').value.trim();
+  if(!body){toast('st-break','请先粘贴正文','err');return;}
+  if(!S.key){toast('st-break','未配置 API Key（去⚙设置），或改用「手动填/载入示例」','err');return;}
+  toast('st-break','AI 拆解中，请稍候…','load');
+  const url=(S.base||'https://dashscope.aliyuncs.com/compatible-mode/v1').replace(/\/$/,'')+'/chat/completions';
+  try{
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+S.key},body:JSON.stringify({model:S.model||'qwen-plus',messages:[{role:'system',content:SYS},{role:'user',content:buildPrompt(body,$('in-title').value,$('in-source').value)}],temperature:0.4})});
+    if(!r.ok){throw new Error('HTTP '+r.status+' '+(await r.text()).slice(0,120));}
+    const j=await r.json();
+    let txt=j.choices[0].message.content||'';
+    txt=txt.replace(/```json/gi,'').replace(/```/g,'').trim();
+    const m=txt.match(/\{[\s\S]*\}/);const data=JSON.parse(m?m[0]:txt);
+    if($('in-title').value&&!data.skeleton.title)data.skeleton.title=$('in-title').value;
+    if($('in-source').value&&!data.skeleton.meta)data.skeleton.meta='来源｜<<'+$('in-source').value+'>>';
+    renderForm(normalize(data));
+    toast('st-break','拆解完成，请微调后生成卡片','ok');
+  }catch(err){
+    console.error(err);
+    toast('st-break','AI调用失败（多为浏览器跨域/网络/Key问题）：'+err.message+' —— 可改用「手动填」或「载入示例」','err');
+  }
+}
+function normalize(d){d=d||{};d.quotes=d.quotes||[];d.data=d.data||{};d.skeleton=d.skeleton||{};d.skeleton.sections=d.skeleton.sections||[];return d;}
+
+/* ============ 生成+存档+预览 ============ */
+let CURRENT=null;
+function genAndSave(){
+  const e=collectForm();const c=ctx();CURRENT={e,c};
+  // 存档
+  const arr=getEntries();const rec={date:c.date,dayNo:c.dayNo,theme:(c.tags[2]||e.qtitle||''),entry:e,tags:c.tags};
+  const idx=arr.findIndex(x=>x.date===c.date);if(idx>=0)arr[idx]=rec;else arr.push(rec);
+  arr.sort((a,b)=>a.date<b.date?-1:1);putEntries(arr);
+  renderPreview();renderArc();showView('preview');
+}
+function renderPreview(){
+  const box=$('preview-box');if(!CURRENT){box.innerHTML='';$('pv-empty').style.display='block';return;}
+  $('pv-empty').style.display='none';
+  const {e,c}=CURRENT;
+  const list=[['00_倒计时',card0(c)],['01_金句',card1(c,e)],['02_数据',card2(c,e)],['03_骨架',card3(c,e)]];
+  box.innerHTML='';
+  list.forEach(([name,html])=>{
+    const wrap=document.createElement('div');wrap.innerHTML=`<div class="card-ui" style="padding:10px;"><div class="pv-slot"></div><div class="btn-row"><button class="btn btn-seal btn-sm" style="width:100%;">⬇ 保存 ${name}.png</button></div></div>`;
+    box.appendChild(wrap);mountPreview(wrap.querySelector('.pv-slot'),html);
+    wrap.querySelector('button').onclick=async()=>{await downloadCard(html,name);};
+  });
+  toast('st-preview','','');
+}
+function weekRange(d){const day=(d.getDay()+6)%7;const mon=new Date(d);mon.setDate(d.getDate()-day);const sun=new Date(mon);sun.setDate(mon.getDate()+6);const iso=dt=>dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate());return{start:iso(mon),end:iso(sun),no:weekNo(d)};}
+function weekNo(d){const t=new Date(d.getFullYear(),0,1);return pad(Math.floor(((d-t)/86400000+t.getDay())/7)+1);}
+function genWeekly(){
+  const td=parseD(todayISO());const r=weekRange(td);const arr=getEntries().filter(x=>x.date>=r.start&&x.date<=r.end);
+  if(!arr.length){toast('week-info','本周还没有存档日卡，先去「今日」生成并存档。','err');return;}
+  const days=arr.map(x=>{const d=parseD(x.date);const q=(x.entry.quotes[0]||{}).text||'';return{dow:WD[d.getDay()],n:pad(d.getDate()),dayNo:x.dayNo,theme:x.theme,quote:q};});
+  const themes=[...new Set(arr.map(x=>x.theme))].slice(0,2).join(' · ');
+  const week={no:r.no,range:r.start.replace(/-/g,'.')+' — '+r.end.replace(/-/g,'.'),days,qCount:arr.reduce((s,x)=>s+(x.entry.quotes||[]).length,0),dCount:arr.length,kCount:arr.length,theme:themes||'本周申论素材',summary:'本周聚焦'+ (themes||'多个主题') +'，共积累 '+week_q(arr)+' 则金句、'+arr.length+' 组数据案例。建议把同主题的金句与数据两两配对，考场上即可"观点+论据"成段输出。'};
+  const c=ctx();c.mmdd=r.end.slice(5).replace('-',' / ');c.wd='SUN';
+  const html=card4(c,week);const box=$('week-box');box.innerHTML=`<div class="card-ui" style="padding:10px;"><div class="wk-slot"></div><div class="btn-row"><button class="btn btn-seal btn-sm" style="width:100%;">⬇ 保存 周合辑.png</button></div></div>`;
+  mountPreview(box.querySelector('.wk-slot'),html);
+  box.querySelector('button').onclick=()=>downloadCard(html,'周合辑_WEEK'+week.no);
+  toast('week-info','已聚合本周 '+arr.length+' 天存档。','ok');
+}
+function week_q(arr){return arr.reduce((s,x)=>s+(x.entry.quotes||[]).length,0);}
+
+/* ============ 存档页 ============ */
+function renderArc(){
+  const arr=getEntries().slice().reverse();const box=$('arc-list');
+  if(!arr.length){box.innerHTML='<div class="empty">还没有存档</div>';return;}
+  box.innerHTML='';arr.forEach(x=>{
+    const div=document.createElement('div');div.className='arc-item';
+    div.innerHTML=`<div><div class="l">DAY ${x.dayNo} · ${esc(x.theme)}</div><div class="r">${x.date} · ${x.entry.quotes.length}金句/${x.entry.skeleton.sections.length}骨架</div></div><div class="acts"><button class="btn btn-ghost btn-sm" data-a="edit">编辑</button><button class="btn btn-ghost btn-sm" data-a="pv">预览</button></div>`;
+    div.querySelector('[data-a=edit]').onclick=()=>{CURRENT={e:x.entry,c:ctx()};renderForm(x.entry);$('g-tags').value=(x.tags||[]).join(' / ');showView('break');};
+    div.querySelector('[data-a=pv]').onclick=()=>{CURRENT={e:x.entry,c:ctx()};renderPreview();showView('preview');};
+    box.appendChild(div);
+  });
+}
+
+/* ============ 设置 ============ */
+function loadSettingsToForm(){$('s-key').value=S.key||'';$('s-base').value=S.base||'https://dashscope.aliyuncs.com/compatible-mode/v1';$('s-model').value=S.model||'qwen-plus';$('s-exam').value=S.exam||'2026-12-06';$('s-examlabel').value=S.examLabel||'2027 江苏省考笔试';$('s-start').value=S.start||'';$('s-handle').value=S.handle||'上岸闪记';$('s-motto').value=S.motto||'';$('s-mottosub').value=S.mottoSub||'';}
+function saveSettings(){S={key:$('s-key').value.trim(),base:$('s-base').value.trim(),model:$('s-model').value.trim(),exam:$('s-exam').value,examLabel:$('s-examlabel').value.trim(),start:$('s-start').value,handle:$('s-handle').value.trim(),motto:$('s-motto').value.trim(),mottoSub:$('s-mottosub').value.trim()};saveS();toast('st-set','已保存 ✓','ok');}
+
+/* ============ 示例数据 ============ */
+function loadSample(){
+  $('in-title').value='统筹推进银发经济提质升级';
+  $('in-source').value='《群众》2026年第16期 · 房冠辛';
+  $('in-body').value='（示例：已直接填入今日拆解结果，无需正文）';
+  renderForm({qtitle:'银发经济 · 三则',source_line:'素材来源｜《群众》2026年第16期 ·《统筹推进银发经济提质升级》',tags:['江苏B类','在职备考','银发经济'],
+    quotes:[{text:'发展银发经济，既是积极应对人口老龄化的【核心抓手】，又是培育经济发展新动能的【关键路径】。',topic:'人口老龄化 / 银发经济 / 高质量发展',tip:'可作破题句，一句话点明"民生+经济"双重定位'},{text:'推动银发经济从"保基本"向"提品质"跃升，从"民生负担"向"发展红利"转变。',topic:'消费升级 / 民生保障 / 新质生产力',tip:'两组"从…向…"对仗，适合做分论点标题或段尾升华'},{text:'莫道桑榆晚，为霞尚满天——让老年人乐享有尊严、有品质、有温度的晚年生活。',topic:'老年友好型社会 / 民生福祉 / 基层治理',tip:'古诗起兴＋排比落点，大作文结尾万能金句'}],
+    data:{title:'银发经济 · 江苏家底',no:'019',num:'5.7',unit:'万家',label:'江苏以养老康养为主要内容的企业数量，位居全国第一，仅智慧健康养老产业规模就超3000亿元',source:'数据来源｜《群众》2026年第16期',bg:'截至2025年底，江苏60岁及以上老年人口达<<2274万>>，老龄化率<<26.69%>>、高于全国3.69个百分点；而全省在岗养老护理员仅6.07万，按国家标准测算缺口近<<34万>>。',usage:'银发经济对江苏而言，既是<<2274万>>老年人口催生的巨大市场，也是<<34万>>护理缺口暴露的治理短板——机遇与挑战并存，"银色浪潮"正成为高质量发展的关键变量。',tags:'银发经济 / 人口老龄化 / 江苏案例'},
+    skeleton:{title:'统筹推进银发经济提质升级',meta:'来源｜<<《群众》2026年第16期>> · 作者｜房冠辛（江苏省委党校教授）· 责编｜霍宏光',sections:[{key:'是什么',main:'银发经济横跨一二三产业，正经历"四个转变"：需求从生存型向发展型、覆盖从窄领域向宽领域、形态从实体向虚实融合、定位从民生保障向经济动能',sub:'破题句：发展银发经济，既是应对老龄化的核心抓手，也是培育新动能的关键路径'},{key:'为什么',main:'机遇与挑战并存——产业规模居全国第一，但面临<<制度协同、有效供给、人才支撑、消费环境>>四重短板',sub:'关键数据：护理员缺口近34万，"一床难求"与"床位空置"并存'},{key:'怎么做',main:'多措并举：以更协同的政策、更丰富的服务创新、更坚实的人才队伍、更完善的信任体系，推动规模化·标准化·集群化·品牌化',sub:'江苏抓手："15分钟养老服务圈"、医养康养融合、"互联网+护理服务"、时间银行'}],tags:'骨架拆解 / 银发经济 / B类适用'}});
+  toast('st-break','已载入今日示例，可直接「生成卡片并存档」','ok');
+}
+function manualFill(){renderForm({qtitle:'',quotes:[{},{},{}],data:{},skeleton:{sections:[{key:'是什么'},{key:'为什么'},{key:'怎么做'}]},tags:[]});toast('st-break','已展开手动填写表单','ok');}
+
+/* ============ 导航 ============ */
+function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('v-'+v).classList.add('active');document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));if(v==='preview')renderPreview();if(v==='arc')renderArc();window.scrollTo(0,0);}
+window.addEventListener('resize',()=>{if($('v-preview').classList.contains('active'))renderPreview();});
+
+/* ============ 初始化 ============ */
+if(!S.exam){S={exam:'2026-12-06',examLabel:'2027 江苏省考笔试',handle:'上岸闪记',base:'https://dashscope.aliyuncs.com/compatible-mode/v1',model:'qwen-plus'};saveS();}
+loadSettingsToForm();
+if(!S.start){/* 提醒设置起始日 */}
+</script>
+</body>
+</html>
