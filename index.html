@@ -64,6 +64,15 @@ textarea.body-in{min-height:150px;font-size:14px;}
 .arc-item .r{font-size:12px;color:var(--muted);margin-top:3px;}
 .arc-item .acts{display:flex;gap:8px;}
 .empty{text-align:center;color:var(--muted);font-size:13px;padding:40px 0;}
+/* 保存弹窗 */
+.save-modal{position:fixed;inset:0;background:rgba(15,20,28,.94);z-index:200;display:none;flex-direction:column;align-items:center;padding:22px 18px calc(22px + env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.save-modal.show{display:flex;}
+.save-modal .sm-head{color:#F5F1E6;font-size:14px;text-align:center;margin-bottom:6px;letter-spacing:1px;line-height:1.6;}
+.save-modal .sm-sub{color:#9AA4B5;font-size:11px;text-align:center;margin-bottom:14px;line-height:1.7;letter-spacing:.5px;}
+.save-modal .sm-img{max-width:100%;max-height:62vh;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.6);object-fit:contain;background:#000;}
+.save-modal .sm-actions{display:flex;gap:10px;margin-top:16px;width:100%;max-width:360px;}
+.save-modal .sm-actions .btn{flex:1;text-align:center;text-decoration:none;}
+.save-modal .sm-tip{color:#7A8090;font-size:11px;margin-top:14px;text-align:center;line-height:1.7;max-width:340px;}
 /* 底部 tab */
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);}
 nav.tabs button{flex:1;background:none;border:none;padding:9px 0 7px;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit;}
@@ -248,7 +257,7 @@ nav.tabs button.on{color:var(--accent);font-weight:700;}
 
 <!-- 卡片预览 -->
 <section class="view" id="v-preview">
-  <div class="preview-note">下面是 1242×1656 原图预览（已缩放显示）。点每张卡下方按钮保存到相册。<br>iPhone 若直接下载无效，长按图片「存储到照片」。</div>
+  <div class="preview-note">点每张卡下方按钮保存：<br>· iPhone/安卓浏览器 → 弹出系统分享，选「存储图像」即入相册（也可直接分享到小红书）<br>· 微信内打开 → 会弹出图片，长按 →「保存图片」即可</div>
   <div id="preview-box"></div>
   <div class="empty" id="pv-empty">还没有卡片，先去「今日」生成。</div>
 </section>
@@ -311,6 +320,16 @@ nav.tabs button.on{color:var(--accent);font-weight:700;}
 </nav>
 </div>
 <div class="export-layer" id="exportLayer"></div>
+<div class="save-modal" id="save-modal" onclick="if(event.target===this)closeSaveModal()">
+  <div class="sm-head">长按下方图片 → 选「存储到照片 / 保存图片」</div>
+  <div class="sm-sub" id="sm-sub">iOS：长按 → 存储到照片 · Android：长按 → 下载图片 · 微信内：长按 → 保存图片</div>
+  <img class="sm-img" id="sm-img" alt="卡片图">
+  <div class="sm-actions">
+    <a class="btn btn-primary" id="sm-dl" download>直接下载</a>
+    <button class="btn btn-ghost" onclick="closeSaveModal()">关闭</button>
+  </div>
+  <div class="sm-tip">若你在微信里打开，右上角「···」→「在浏览器打开」体验最佳（Safari / Chrome 支持一键分享到小红书或存相册）。</div>
+</div>
 
 <script>
 /* ============ 常量 ============ */
@@ -354,14 +373,40 @@ function mountPreview(el,html){const s=fitScale();el.innerHTML=`<div class="card
 async function downloadCard(html,name){
   const layer=$('exportLayer');layer.innerHTML=html;const card=layer.querySelector('.card');
   card.style.transform='none';
-  const st=$('st-break');
+  let canvas;
   try{
-    const canvas=await html2canvas(card,{width:1242,height:1656,scale:1,backgroundColor:'#FAF8F3',useCORS:true,logging:false});
-    const url=canvas.toDataURL('image/png');
-    const a=document.createElement('a');a.href=url;a.download=name+'.png';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),1000);
-    toast('st-preview','已生成 '+name+'.png，若未自动保存请长按图片存储','ok');
-  }catch(err){toast('st-preview','导出失败：'+err.message,'err');}
-  finally{layer.innerHTML='';}
+    canvas=await html2canvas(card,{width:1242,height:1656,scale:1,backgroundColor:'#FAF8F3',useCORS:true,logging:false});
+  }catch(err){layer.innerHTML='';toast('st-preview','图片生成失败：'+err.message,'err');return;}
+  layer.innerHTML='';
+  const blob=await new Promise(res=>canvas.toBlob(res,'image/png'));
+  if(!blob){toast('st-preview','图片编码失败，请重试','err');return;}
+  const url=URL.createObjectURL(blob);
+  // 1) 优先原生分享（iOS Safari / Android Chrome）→ 系统「存储到照片 / 分享到小红书」
+  try{
+    const file=new File([blob],name+'.png',{type:'image/png'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:name,text:'申论日更 · '+name});
+      setTimeout(()=>URL.revokeObjectURL(url),4000);
+      toast('st-preview','已通过系统分享保存 ✓','ok');
+      return;
+    }
+  }catch(e){
+    if(e && e.name==='AbortError'){/* 用户主动取消分享，什么都不做 */setTimeout(()=>URL.revokeObjectURL(url),4000);return;}
+    // 其他错误继续走弹窗兜底
+  }
+  // 2) 兜底：全屏弹窗展示图片，用户长按保存（微信内 / 老浏览器 / 桌面）
+  showSaveModal(url,name);
+}
+function showSaveModal(url,name){
+  const m=$('save-modal');const img=$('sm-img');const dl=$('sm-dl');
+  img.src=url;dl.href=url;dl.setAttribute('download',(name||'card')+'.png');
+  m.classList.add('show');document.body.style.overflow='hidden';
+}
+function closeSaveModal(){
+  const m=$('save-modal');if(!m.classList.contains('show'))return;
+  const img=$('sm-img');const src=img.src;
+  m.classList.remove('show');img.src='';document.body.style.overflow='';
+  if(src && src.startsWith('blob:'))setTimeout(()=>URL.revokeObjectURL(src),1000);
 }
 function toast(id,msg,cls){const el=$(id);if(!el)return;el.textContent=msg;el.className='status show '+(cls||'');}
 
