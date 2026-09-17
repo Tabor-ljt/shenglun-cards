@@ -188,7 +188,7 @@ nav.tabs button.on{color:var(--accent);font-weight:700;}
 <body>
 <div class="app">
 <header class="top">
-  <div class="top-row"><div><div class="t">申论精读卡工厂</div><div class="s">在职备考 · 江苏B类 · 上岸闪记</div></div><button class="gear" onclick="showView('settings')">⚙</button></div>
+  <div class="top-row"><div><div class="t">申论精读卡工厂</div><div class="s">在职备考 · 江苏B类 · 上岸闪记 <span id="ver"></span></div></div><button class="gear" onclick="showView('settings')">⚙</button></div>
   <div id="quota-bar"></div>
 </header>
 
@@ -322,7 +322,7 @@ nav.tabs button.on{color:var(--accent);font-weight:700;}
 <div class="export-layer" id="exportLayer"></div>
 <div class="save-modal" id="save-modal" onclick="if(event.target===this)closeSaveModal()">
   <div class="sm-head">长按下方图片 → 选「存储到照片 / 保存图片」</div>
-  <div class="sm-sub" id="sm-sub">iOS：长按 → 存储到照片 · Android：长按 → 下载图片 · 微信内：长按 → 保存图片</div>
+  <div class="sm-sub" id="sm-sub">长按下方图片 → 选「保存图片 / 存储到照片 / 下载图片」（iOS · 安卓 · 夸克 · UC · 微信 通用）</div>
   <img class="sm-img" id="sm-img" alt="卡片图">
   <div class="sm-actions">
     <a class="btn btn-primary" id="sm-dl" download>直接下载</a>
@@ -380,22 +380,21 @@ async function downloadCard(html,name){
   layer.innerHTML='';
   const blob=await new Promise(res=>canvas.toBlob(res,'image/png'));
   if(!blob){toast('st-preview','图片编码失败，请重试','err');return;}
-  const url=URL.createObjectURL(blob);
   // 1) 优先原生分享（iOS Safari / Android Chrome）→ 系统「存储到照片 / 分享到小红书」
   try{
     const file=new File([blob],name+'.png',{type:'image/png'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
       await navigator.share({files:[file],title:name,text:'申论日更 · '+name});
-      setTimeout(()=>URL.revokeObjectURL(url),4000);
       toast('st-preview','已通过系统分享保存 ✓','ok');
       return;
     }
   }catch(e){
-    if(e && e.name==='AbortError'){/* 用户主动取消分享，什么都不做 */setTimeout(()=>URL.revokeObjectURL(url),4000);return;}
+    if(e && e.name==='AbortError'){return;}
     // 其他错误继续走弹窗兜底
   }
-  // 2) 兜底：全屏弹窗展示图片，用户长按保存（微信内 / 老浏览器 / 桌面）
-  showSaveModal(url,name);
+  // 2) 兜底：用 dataURL 展示（夸克/UC/QQ 长按保存对 blob: 常无效，data: 更通用）
+  const dataUrl=canvas.toDataURL('image/png');
+  showSaveModal(dataUrl,name);
 }
 function showSaveModal(url,name){
   const m=$('save-modal');const img=$('sm-img');const dl=$('sm-dl');
@@ -535,9 +534,11 @@ function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.r
 window.addEventListener('resize',()=>{if($('v-preview').classList.contains('active'))renderPreview();});
 
 /* ============ 初始化 ============ */
+const APP_VER='v2.1';
 if(!S.exam){S={exam:'2026-12-06',examLabel:'2027 江苏省考笔试',handle:'上岸闪记',base:'https://dashscope.aliyuncs.com/compatible-mode/v1',model:'qwen-plus',quota:'2026-12-16',showQuota:true};saveS();}
 loadSettingsToForm();
 updateQuotaBar();
+(function(){const v=$('ver');if(v)v.textContent='· '+APP_VER;})();
 if(!S.start){/* 提醒设置起始日 */}
 </script>
 </body>
